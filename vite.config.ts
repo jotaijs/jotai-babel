@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react({
         babel: {
-          plugins: ['jotai-babel/preset'],
+          presets: ['jotai-babel/preset'],
         },
       }),
       tsconfigPaths({ root: resolve('.') }),
