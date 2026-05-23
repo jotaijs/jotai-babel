@@ -71,4 +71,6 @@ const atomFunctionNames = [
   'atomWithMutationState',
   // jotai-eager
   'eagerAtom',
+  // jotai-effect
+  'atomEffect',
 ];
