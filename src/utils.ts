@@ -61,4 +61,14 @@ const atomFunctionNames = [
   'atomWithCache',
   // jotai-recoil
   'atomWithRecoilValue',
+  // jotai-tanstack-query
+  'atomWithQuery',
+  'atomWithQueries',
+  'atomWithInfiniteQuery',
+  'atomWithMutation',
+  'atomWithSuspenseQuery',
+  'atomWithSuspenseInfiniteQuery',
+  'atomWithMutationState',
+  // jotai-eager
+  'eagerAtom',
 ];
