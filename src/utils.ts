@@ -12,6 +12,11 @@ function isJotaiSource(source: string): boolean {
   );
 }
 
+const jotaiImportCache = new WeakMap<
+  babel.types.Program,
+  { importedNames: Set<string>; importedNamespaces: Set<string> }
+>();
+
 export function getJotaiImportedNames(
   t: typeof types,
   programNode: babel.types.Program,
@@ -19,6 +24,9 @@ export function getJotaiImportedNames(
   importedNames: Set<string>;
   importedNamespaces: Set<string>;
 } {
+  const cached = jotaiImportCache.get(programNode);
+  if (cached) return cached;
+
   const importedNames = new Set<string>();
   const importedNamespaces = new Set<string>();
 
@@ -38,7 +46,9 @@ export function getJotaiImportedNames(
     }
   }
 
-  return { importedNames, importedNamespaces };
+  const result = { importedNames, importedNamespaces };
+  jotaiImportCache.set(programNode, result);
+  return result;
 }
 
 export function isAtom(
