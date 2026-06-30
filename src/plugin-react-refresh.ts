@@ -1,7 +1,7 @@
 import babel from '@babel/core';
 import type { PluginObj } from '@babel/core';
 import _templateBuilder from '@babel/template';
-import { isAtom } from './utils.js';
+import { getJotaiImportedNames, isAtom } from './utils.js';
 import type { PluginOptions } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,9 +36,21 @@ export default function reactRefreshPlugin(
       },
       ExportDefaultDeclaration(nodePath, state) {
         const { node } = nodePath;
+        const programNode = nodePath.scope.getProgramParent()
+          .block as babel.types.Program;
+        const { importedNames, importedNamespaces } = getJotaiImportedNames(
+          t,
+          programNode,
+        );
         if (
           t.isCallExpression(node.declaration) &&
-          isAtom(t, node.declaration.callee, options?.customAtomNames)
+          isAtom(
+            t,
+            node.declaration.callee,
+            options?.customAtomNames,
+            importedNames,
+            importedNamespaces,
+          )
         ) {
           const filename = state.filename || 'unknown';
           const atomKey = `${filename}/defaultExport`;
@@ -54,10 +66,22 @@ export default function reactRefreshPlugin(
         }
       },
       VariableDeclarator(nodePath, state) {
+        const programNode = nodePath.scope.getProgramParent()
+          .block as babel.types.Program;
+        const { importedNames, importedNamespaces } = getJotaiImportedNames(
+          t,
+          programNode,
+        );
         if (
           t.isIdentifier(nodePath.node.id) &&
           t.isCallExpression(nodePath.node.init) &&
-          isAtom(t, nodePath.node.init.callee, options?.customAtomNames) &&
+          isAtom(
+            t,
+            nodePath.node.init.callee,
+            options?.customAtomNames,
+            importedNames,
+            importedNamespaces,
+          ) &&
           // Make sure atom declaration is in module scope
           (nodePath.parentPath.parentPath?.isProgram() ||
             nodePath.parentPath.parentPath?.isExportNamedDeclaration())
