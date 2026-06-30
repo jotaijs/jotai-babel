@@ -77,7 +77,11 @@ export function isAtom(
       if (customAtomNames.includes(property.name)) return true;
       // When a call site path is provided, verify the namespace binding resolves to jotai
       if (callSitePath && t.isIdentifier(object)) {
-        return isNamespaceBindingImportedFromJotai(t, object.name, callSitePath);
+        return isNamespaceBindingImportedFromJotai(
+          t,
+          object.name,
+          callSitePath,
+        );
       }
       return true;
     }
