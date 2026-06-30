@@ -39,8 +39,7 @@ function isNamespaceBindingImportedFromJotai(
   const bindingNode = binding.path.node;
   const bindingParent = binding.path.parent;
   return (
-    (t.isImportNamespaceSpecifier(bindingNode) ||
-      t.isImportDefaultSpecifier(bindingNode)) &&
+    t.isImportNamespaceSpecifier(bindingNode) &&
     t.isImportDeclaration(bindingParent) &&
     isJotaiSource(bindingParent.source.value)
   );
