@@ -227,3 +227,84 @@ const result = unwrap(something);`,
     const result = unwrap(something);"
   `);
 });
+
+it('Should not transform atom-like namespace calls not imported from jotai', () => {
+  expect(
+    transform(
+      `import * as foo from 'some-other-lib';
+const result = foo.atom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import * as foo from 'some-other-lib';
+    const result = foo.atom(0);"
+  `);
+});
+
+it('Should not transform shadowed jotai named imports', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+function create(atom) {
+  const value = atom(0);
+  return value;
+}`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    function create(atom) {
+      const value = atom(0);
+      return value;
+    }"
+  `);
+});
+
+it('Should not transform shadowed jotai namespace imports', () => {
+  expect(
+    transform(
+      `import * as jotai from 'jotai';
+function create(jotai) {
+  const value = jotai.atom(0);
+  return value;
+}`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import * as jotai from 'jotai';
+    function create(jotai) {
+      const value = jotai.atom(0);
+      return value;
+    }"
+  `);
+});

@@ -100,16 +100,14 @@ it('Should handle all atom types', () => {
   expect(
     transform(
       `
-      import { atom } from 'jotai';
-      import { atomFamily, atomWithDefault, atomWithObservable, atomWithReducer, atomWithReset, atomWithStorage, freezeAtom, loadable, selectAtom, splitAtom, unwrap } from 'jotai/utils';
-      import { atomWithSubscription } from 'jotai-trpc';
-      import { atomWithStore } from 'jotai-redux';
+      import { atom, atomFamily } from 'jotai';
+      import { atomWithDefault, atomWithObservable, atomWithReducer, atomWithReset, atomWithStorage, freezeAtom, loadable, selectAtom, splitAtom, unwrap } from 'jotai/utils';
+      import { atomWithSubscription, atomWithStore } from 'jotai-redux';
       import { atomWithHash, atomWithLocation } from 'jotai-location';
       import { focusAtom } from 'jotai-optics';
       import { atomWithValidate, validateAtoms } from 'jotai-form';
       import { atomWithCache } from 'jotai-cache';
       import { atomWithRecoilValue } from 'jotai-recoil';
-
       export const countAtom = atom(0);
       const myFamily = atomFamily((param) => atom(param));
       const countAtomWithDefault = atomWithDefault((get) => get(countAtom) * 2);
@@ -146,10 +144,9 @@ it('Should handle all atom types', () => {
       'atoms/index.ts',
     ),
   ).toMatchInlineSnapshot(`
-    "import { atom } from 'jotai';
-    import { atomFamily, atomWithDefault, atomWithObservable, atomWithReducer, atomWithReset, atomWithStorage, freezeAtom, loadable, selectAtom, splitAtom, unwrap } from 'jotai/utils';
-    import { atomWithSubscription } from 'jotai-trpc';
-    import { atomWithStore } from 'jotai-redux';
+    "import { atom, atomFamily } from 'jotai';
+    import { atomWithDefault, atomWithObservable, atomWithReducer, atomWithReset, atomWithStorage, freezeAtom, loadable, selectAtom, splitAtom, unwrap } from 'jotai/utils';
+    import { atomWithSubscription, atomWithStore } from 'jotai-redux';
     import { atomWithHash, atomWithLocation } from 'jotai-location';
     import { focusAtom } from 'jotai-optics';
     import { atomWithValidate, validateAtoms } from 'jotai-form';
@@ -218,12 +215,52 @@ it('Handles custom atom names a debugLabel to an atom', () => {
 
 it('Should not transform atom-like functions not imported from jotai', () => {
   expect(
-    transform(`
-      import { unwrap } from 'some-other-lib';
-      const result = unwrap(something);
-    `),
+    transform(`import { unwrap } from 'some-other-lib';
+const result = unwrap(something);`),
   ).toMatchInlineSnapshot(`
     "import { unwrap } from 'some-other-lib';
     const result = unwrap(something);"
+  `);
+});
+
+it('Should not transform atom-like namespace calls not imported from jotai', () => {
+  expect(
+    transform(`import * as foo from 'some-other-lib';
+const result = foo.atom(0);`),
+  ).toMatchInlineSnapshot(`
+    "import * as foo from 'some-other-lib';
+    const result = foo.atom(0);"
+  `);
+});
+
+it('Should not transform shadowed jotai named imports', () => {
+  expect(
+    transform(`import { atom } from 'jotai';
+function create(atom) {
+  const value = atom(0);
+  return value;
+}`),
+  ).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    function create(atom) {
+      const value = atom(0);
+      return value;
+    }"
+  `);
+});
+
+it('Should not transform shadowed jotai namespace imports', () => {
+  expect(
+    transform(`import * as jotai from 'jotai';
+function create(jotai) {
+  const value = jotai.atom(0);
+  return value;
+}`),
+  ).toMatchInlineSnapshot(`
+    "import * as jotai from 'jotai';
+    function create(jotai) {
+      const value = jotai.atom(0);
+      return value;
+    }"
   `);
 });

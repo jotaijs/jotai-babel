@@ -1,7 +1,7 @@
 import babel from '@babel/core';
 import type { PluginObj } from '@babel/core';
 import _templateBuilder from '@babel/template';
-import { getJotaiImportedNames, isAtom } from './utils.js';
+import { isAtom } from './utils.js';
 import type { PluginOptions } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,21 +36,9 @@ export default function reactRefreshPlugin(
       },
       ExportDefaultDeclaration(nodePath, state) {
         const { node } = nodePath;
-        const programNode = nodePath.scope.getProgramParent()
-          .block as babel.types.Program;
-        const { importedNames, importedNamespaces } = getJotaiImportedNames(
-          t,
-          programNode,
-        );
         if (
           t.isCallExpression(node.declaration) &&
-          isAtom(
-            t,
-            node.declaration.callee,
-            options?.customAtomNames,
-            importedNames,
-            importedNamespaces,
-          )
+          isAtom(t, node.declaration.callee, options?.customAtomNames, nodePath)
         ) {
           const filename = state.filename || 'unknown';
           const atomKey = `${filename}/defaultExport`;
@@ -66,12 +54,6 @@ export default function reactRefreshPlugin(
         }
       },
       VariableDeclarator(nodePath, state) {
-        const programNode = nodePath.scope.getProgramParent()
-          .block as babel.types.Program;
-        const { importedNames, importedNamespaces } = getJotaiImportedNames(
-          t,
-          programNode,
-        );
         if (
           t.isIdentifier(nodePath.node.id) &&
           t.isCallExpression(nodePath.node.init) &&
@@ -79,8 +61,7 @@ export default function reactRefreshPlugin(
             t,
             nodePath.node.init.callee,
             options?.customAtomNames,
-            importedNames,
-            importedNamespaces,
+            nodePath,
           ) &&
           // Make sure atom declaration is in module scope
           (nodePath.parentPath.parentPath?.isProgram() ||

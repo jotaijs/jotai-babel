@@ -1,4 +1,4 @@
-import { types } from '@babel/core';
+import babel, { types } from '@babel/core';
 
 export interface PluginOptions {
   customAtomNames?: string[];
@@ -12,60 +12,54 @@ function isJotaiSource(source: string): boolean {
   );
 }
 
-const jotaiImportCache = new WeakMap<
-  babel.types.Program,
-  { importedNames: Set<string>; importedNamespaces: Set<string> }
->();
-
-export function getJotaiImportedNames(
+function isBindingImportedFromJotai(
   t: typeof types,
-  programNode: babel.types.Program,
-): {
-  importedNames: Set<string>;
-  importedNamespaces: Set<string>;
-} {
-  const cached = jotaiImportCache.get(programNode);
-  if (cached) return cached;
+  name: string,
+  path: babel.NodePath,
+): boolean {
+  const binding = path.scope.getBinding(name);
+  if (!binding) return false;
+  const bindingNode = binding.path.node;
+  const bindingParent = binding.path.parent;
+  return (
+    (t.isImportSpecifier(bindingNode) ||
+      t.isImportDefaultSpecifier(bindingNode)) &&
+    t.isImportDeclaration(bindingParent) &&
+    isJotaiSource(bindingParent.source.value)
+  );
+}
 
-  const importedNames = new Set<string>();
-  const importedNamespaces = new Set<string>();
-
-  for (const node of programNode.body) {
-    if (!t.isImportDeclaration(node)) continue;
-    if (!isJotaiSource(node.source.value)) continue;
-
-    for (const specifier of node.specifiers) {
-      if (t.isImportSpecifier(specifier)) {
-        importedNames.add(specifier.local.name);
-      } else if (
-        t.isImportDefaultSpecifier(specifier) ||
-        t.isImportNamespaceSpecifier(specifier)
-      ) {
-        importedNamespaces.add(specifier.local.name);
-      }
-    }
-  }
-
-  const result = { importedNames, importedNamespaces };
-  jotaiImportCache.set(programNode, result);
-  return result;
+function isNamespaceBindingImportedFromJotai(
+  t: typeof types,
+  name: string,
+  path: babel.NodePath,
+): boolean {
+  const binding = path.scope.getBinding(name);
+  if (!binding) return false;
+  const bindingNode = binding.path.node;
+  const bindingParent = binding.path.parent;
+  return (
+    (t.isImportNamespaceSpecifier(bindingNode) ||
+      t.isImportDefaultSpecifier(bindingNode)) &&
+    t.isImportDeclaration(bindingParent) &&
+    isJotaiSource(bindingParent.source.value)
+  );
 }
 
 export function isAtom(
   t: typeof types,
   callee: babel.types.Expression | babel.types.V8IntrinsicIdentifier,
   customAtomNames: PluginOptions['customAtomNames'] = [],
-  importedNames?: Set<string>,
-  importedNamespaces?: Set<string>,
+  callSitePath?: babel.NodePath,
 ): boolean {
   const atomNames = [...atomFunctionNames, ...customAtomNames];
 
   if (t.isIdentifier(callee) && atomNames.includes(callee.name)) {
-    // Custom atom names always pass (user has explicitly opted in)
+    // Custom atom names always bypass the import check (explicit opt-in)
     if (customAtomNames.includes(callee.name)) return true;
-    // If we have import information, verify it was imported from jotai
-    if (importedNames) {
-      return importedNames.has(callee.name);
+    // When a call site path is provided, verify the binding resolves to jotai
+    if (callSitePath) {
+      return isBindingImportedFromJotai(t, callee.name, callSitePath);
     }
     return true;
   }
@@ -73,9 +67,11 @@ export function isAtom(
   if (t.isMemberExpression(callee)) {
     const { object, property } = callee;
     if (t.isIdentifier(property) && atomNames.includes(property.name)) {
-      // For member expressions (e.g. jotai.atom()), check the namespace
-      if (importedNamespaces) {
-        return t.isIdentifier(object) && importedNamespaces.has(object.name);
+      // Custom atom names always bypass the import check (explicit opt-in)
+      if (customAtomNames.includes(property.name)) return true;
+      // When a call site path is provided, verify the namespace binding resolves to jotai
+      if (callSitePath && t.isIdentifier(object)) {
+        return isNamespaceBindingImportedFromJotai(t, object.name, callSitePath);
       }
       return true;
     }
