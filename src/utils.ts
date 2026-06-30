@@ -21,12 +21,19 @@ function isBindingImportedFromJotai(
   if (!binding) return false;
   const bindingNode = binding.path.node;
   const bindingParent = binding.path.parent;
-  return (
-    (t.isImportSpecifier(bindingNode) ||
-      t.isImportDefaultSpecifier(bindingNode)) &&
-    t.isImportDeclaration(bindingParent) &&
-    isJotaiSource(bindingParent.source.value)
-  );
+  if (
+    !t.isImportDeclaration(bindingParent) ||
+    !isJotaiSource(bindingParent.source.value)
+  ) {
+    return false;
+  }
+  if (t.isImportSpecifier(bindingNode)) {
+    const importedName = t.isIdentifier(bindingNode.imported)
+      ? bindingNode.imported.name
+      : bindingNode.imported.value;
+    return atomFunctionNames.includes(importedName);
+  }
+  return t.isImportDefaultSpecifier(bindingNode);
 }
 
 function isNamespaceBindingImportedFromJotai(
@@ -53,14 +60,14 @@ export function isAtom(
 ): boolean {
   const atomNames = [...atomFunctionNames, ...customAtomNames];
 
-  if (t.isIdentifier(callee) && atomNames.includes(callee.name)) {
+  if (t.isIdentifier(callee)) {
     // Custom atom names always bypass the import check (explicit opt-in)
     if (customAtomNames.includes(callee.name)) return true;
     // When a call site path is provided, verify the binding resolves to jotai
     if (callSitePath) {
       return isBindingImportedFromJotai(t, callee.name, callSitePath);
     }
-    return true;
+    return atomFunctionNames.includes(callee.name);
   }
 
   if (t.isMemberExpression(callee)) {

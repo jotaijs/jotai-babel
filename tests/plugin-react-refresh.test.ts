@@ -308,3 +308,49 @@ function create(jotai) {
     }"
   `);
 });
+
+it('Should transform aliased jotai atom imports', () => {
+  expect(
+    transform(
+      `import { atom as jotaiAtom } from 'jotai';
+const countAtom = jotaiAtom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom as jotaiAtom } from 'jotai';
+    const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", jotaiAtom(0));"
+  `);
+});
+
+it('Should not transform non-atom jotai imports aliased to atom-like names', () => {
+  expect(
+    transform(
+      `import { useAtom as atom } from 'jotai';
+const result = atom(someAtom);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { useAtom as atom } from 'jotai';
+    const result = atom(someAtom);"
+  `);
+});

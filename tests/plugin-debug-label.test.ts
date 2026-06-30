@@ -264,3 +264,24 @@ function create(jotai) {
     }"
   `);
 });
+
+it('Should transform aliased jotai atom imports', () => {
+  expect(
+    transform(`import { atom as jotaiAtom } from 'jotai';
+const countAtom = jotaiAtom(0);`),
+  ).toMatchInlineSnapshot(`
+    "import { atom as jotaiAtom } from 'jotai';
+    const countAtom = jotaiAtom(0);
+    countAtom.debugLabel = "countAtom";"
+  `);
+});
+
+it('Should not transform non-atom jotai imports aliased to atom-like names', () => {
+  expect(
+    transform(`import { useAtom as atom } from 'jotai';
+const result = atom(someAtom);`),
+  ).toMatchInlineSnapshot(`
+    "import { useAtom as atom } from 'jotai';
+    const result = atom(someAtom);"
+  `);
+});
