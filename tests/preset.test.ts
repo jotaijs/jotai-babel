@@ -15,27 +15,33 @@ const transform = (
   })?.code;
 
 it('Should add a debugLabel and cache to an atom', () => {
-  expect(transform(`const countAtom = atom(0);`, '/src/atoms.ts'))
-    .toMatchInlineSnapshot(`
-      "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
-        cache: new Map(),
-        get(name, inst) {
-          if (this.cache.has(name)) {
-            return this.cache.get(name);
-          }
-          this.cache.set(name, inst);
-          return inst;
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+const countAtom = atom(0);`,
+      '/src/atoms.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
         }
-      };
-      const countAtom = globalThis.jotaiAtomCache.get("/src/atoms.ts/countAtom", atom(0));
-      countAtom.debugLabel = "countAtom";"
-    `);
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const countAtom = globalThis.jotaiAtomCache.get("/src/atoms.ts/countAtom", atom(0));
+    countAtom.debugLabel = "countAtom";"
+  `);
 });
 
 it('Should add a debugLabel and cache to multiple atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   const countAtom = atom(0);
   const doubleAtom = atom((get) => get(countAtom) * 2);`,
       '/src/atoms.ts',
@@ -51,6 +57,7 @@ it('Should add a debugLabel and cache to multiple atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     const countAtom = globalThis.jotaiAtomCache.get("/src/atoms.ts/countAtom", atom(0));
     countAtom.debugLabel = "countAtom";
     const doubleAtom = globalThis.jotaiAtomCache.get("/src/atoms.ts/doubleAtom", atom(get => get(countAtom) * 2));
@@ -61,7 +68,7 @@ it('Should add a debugLabel and cache to multiple atoms', () => {
 it('Should add a cache and debugLabel for multiple exported atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   export const countAtom = atom(0);
   export const doubleAtom = atom((get) => get(countAtom) * 2);
   `,
@@ -78,6 +85,7 @@ it('Should add a cache and debugLabel for multiple exported atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     countAtom.debugLabel = "countAtom";
     export const doubleAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/doubleAtom", atom(get => get(countAtom) * 2));
@@ -86,28 +94,34 @@ it('Should add a cache and debugLabel for multiple exported atoms', () => {
 });
 
 it('Should add a cache and debugLabel for a default exported atom', () => {
-  expect(transform(`export default atom(0);`, '/src/atoms/index.ts'))
-    .toMatchInlineSnapshot(`
-      "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
-        cache: new Map(),
-        get(name, inst) {
-          if (this.cache.has(name)) {
-            return this.cache.get(name);
-          }
-          this.cache.set(name, inst);
-          return inst;
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
         }
-      };
-      const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/atoms", atom(0));
-      atoms.debugLabel = "atoms";
-      export default atoms;"
-    `);
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/atoms", atom(0));
+    atoms.debugLabel = "atoms";
+    export default atoms;"
+  `);
 });
 
 it('Should add a cache and debugLabel for mixed exports of atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   export const countAtom = atom(0);
   export default atom((get) => get(countAtom) * 2);
   `,
@@ -124,6 +138,7 @@ it('Should add a cache and debugLabel for mixed exports of atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     countAtom.debugLabel = "countAtom";
     const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/atoms", atom(get => get(countAtom) * 2));

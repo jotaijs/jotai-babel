@@ -16,26 +16,32 @@ const transform = (
   })?.code;
 
 it('Should add a cache for a single atom', () => {
-  expect(transform(`const countAtom = atom(0);`, '/src/atoms/index.ts'))
-    .toMatchInlineSnapshot(`
-      "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
-        cache: new Map(),
-        get(name, inst) {
-          if (this.cache.has(name)) {
-            return this.cache.get(name);
-          }
-          this.cache.set(name, inst);
-          return inst;
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+const countAtom = atom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
         }
-      };
-      const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));"
-    `);
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));"
+  `);
 });
 
 it('Should add a cache for multiple atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   const countAtom = atom(0);
   const doubleAtom = atom((get) => get(countAtom) * 2);
   `,
@@ -52,6 +58,7 @@ it('Should add a cache for multiple atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     const doubleAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/doubleAtom", atom(get => get(countAtom) * 2));"
   `);
@@ -60,7 +67,7 @@ it('Should add a cache for multiple atoms', () => {
 it('Should add a cache for multiple exported atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   export const countAtom = atom(0);
   export const doubleAtom = atom((get) => get(countAtom) * 2);
   `,
@@ -77,32 +84,39 @@ it('Should add a cache for multiple exported atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     export const doubleAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/doubleAtom", atom(get => get(countAtom) * 2));"
   `);
 });
 
 it('Should add a cache for a default exported atom', () => {
-  expect(transform(`export default atom(0);`, '/src/atoms/index.ts'))
-    .toMatchInlineSnapshot(`
-      "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
-        cache: new Map(),
-        get(name, inst) {
-          if (this.cache.has(name)) {
-            return this.cache.get(name);
-          }
-          this.cache.set(name, inst);
-          return inst;
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
         }
-      };
-      export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(0));"
-    `);
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(0));"
+  `);
 });
 
 it('Should add a cache for mixed exports of atoms', () => {
   expect(
     transform(
-      `
+      `import { atom } from 'jotai';
   export const countAtom = atom(0);
   export default atom((get) => get(countAtom) * 2);
   `,
@@ -119,6 +133,7 @@ it('Should add a cache for mixed exports of atoms', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(get => get(countAtom) * 2));"
   `);
@@ -133,7 +148,8 @@ it('Should fail if no filename is available', () => {
 it('Should handle atoms returned from functions (#891)', () => {
   expect(
     transform(
-      `function createAtom(label) {
+      `import { atom } from 'jotai';
+function createAtom(label) {
     const anAtom = atom(0);
     anAtom.debugLabel = label;
     return anAtom;
@@ -155,6 +171,7 @@ it('Should handle atoms returned from functions (#891)', () => {
         return inst;
       }
     };
+    import { atom } from 'jotai';
     function createAtom(label) {
       const anAtom = atom(0);
       anAtom.debugLabel = label;
@@ -185,5 +202,109 @@ it('Should handle custom atom names', () => {
       }
     };
     const mySpecialThing = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/mySpecialThing", myCustomAtom(0));"
+  `);
+});
+
+it('Should not transform atom-like functions not imported from jotai', () => {
+  expect(
+    transform(
+      `import { unwrap } from 'some-other-lib';
+const result = unwrap(something);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { unwrap } from 'some-other-lib';
+    const result = unwrap(something);"
+  `);
+});
+
+it('Should not transform atom-like namespace calls not imported from jotai', () => {
+  expect(
+    transform(
+      `import * as foo from 'some-other-lib';
+const result = foo.atom(0);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import * as foo from 'some-other-lib';
+    const result = foo.atom(0);"
+  `);
+});
+
+it('Should not transform shadowed jotai named imports', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+function create(atom) {
+  const value = atom(0);
+  return value;
+}`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    function create(atom) {
+      const value = atom(0);
+      return value;
+    }"
+  `);
+});
+
+it('Should not transform shadowed jotai namespace imports', () => {
+  expect(
+    transform(
+      `import * as jotai from 'jotai';
+function create(jotai) {
+  const value = jotai.atom(0);
+  return value;
+}`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import * as jotai from 'jotai';
+    function create(jotai) {
+      const value = jotai.atom(0);
+      return value;
+    }"
   `);
 });
