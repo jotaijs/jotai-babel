@@ -1,4 +1,4 @@
-import { types } from '@babel/core';
+import type { types } from '@babel/core';
 
 export interface PluginOptions {
   customAtomNames?: string[];
