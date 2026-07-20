@@ -1,4 +1,4 @@
-import babel, { types } from '@babel/core';
+import type * as babel from '@babel/core';
 
 export interface PluginOptions {
   customAtomNames?: string[];
@@ -13,7 +13,7 @@ function isJotaiSource(source: string): boolean {
 }
 
 function isBindingImportedFromJotai(
-  t: typeof types,
+  t: typeof babel.types,
   name: string,
   path: babel.NodePath,
 ): boolean {
@@ -37,7 +37,7 @@ function isBindingImportedFromJotai(
 }
 
 function isNamespaceBindingImportedFromJotai(
-  t: typeof types,
+  t: typeof babel.types,
   name: string,
   path: babel.NodePath,
 ): boolean {
@@ -53,7 +53,7 @@ function isNamespaceBindingImportedFromJotai(
 }
 
 export function isAtom(
-  t: typeof types,
+  t: typeof babel.types,
   callee: babel.types.Expression | babel.types.V8IntrinsicIdentifier,
   customAtomNames: PluginOptions['customAtomNames'] = [],
   callSitePath?: babel.NodePath,

@@ -1,4 +1,4 @@
-import babel from '@babel/core';
+import type * as babel from '@babel/core';
 import pluginDebugLabel from './plugin-debug-label.js';
 import pluginReactRefresh from './plugin-react-refresh.js';
 import type { PluginOptions } from './utils.js';

@@ -1,5 +1,4 @@
-import babel from '@babel/core';
-import type { PluginObj } from '@babel/core';
+import type * as babel from '@babel/core';
 import _templateBuilder from '@babel/template';
 import { isAtom } from './utils.js';
 import type { PluginOptions } from './utils.js';
@@ -10,7 +9,7 @@ const templateBuilder = (_templateBuilder as any).default || _templateBuilder;
 export default function reactRefreshPlugin(
   { types: t }: typeof babel,
   options?: PluginOptions,
-): PluginObj {
+): babel.PluginObj {
   return {
     pre({ opts }) {
       if (!opts.filename) {
