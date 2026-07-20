@@ -1,4 +1,4 @@
-import { types } from '@babel/core';
+import type { types } from '@babel/core';
 
 export interface PluginOptions {
   customAtomNames?: string[];
@@ -6,7 +6,7 @@ export interface PluginOptions {
 
 export function isAtom(
   t: typeof types,
-  callee: babel.types.Expression | babel.types.V8IntrinsicIdentifier,
+  callee: types.Expression | types.V8IntrinsicIdentifier,
   customAtomNames: PluginOptions['customAtomNames'] = [],
 ): boolean {
   const atomNames = [...atomFunctionNames, ...customAtomNames];
