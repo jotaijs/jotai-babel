@@ -37,7 +37,7 @@ export default function reactRefreshPlugin(
         const { node } = nodePath;
         if (
           t.isCallExpression(node.declaration) &&
-          isAtom(t, node.declaration.callee, options?.customAtomNames)
+          isAtom(t, node.declaration.callee, options?.customAtomNames, nodePath)
         ) {
           const filename = state.filename || 'unknown';
           const atomKey = `${filename}/defaultExport`;
@@ -56,7 +56,12 @@ export default function reactRefreshPlugin(
         if (
           t.isIdentifier(nodePath.node.id) &&
           t.isCallExpression(nodePath.node.init) &&
-          isAtom(t, nodePath.node.init.callee, options?.customAtomNames) &&
+          isAtom(
+            t,
+            nodePath.node.init.callee,
+            options?.customAtomNames,
+            nodePath,
+          ) &&
           // Make sure atom declaration is in module scope
           (nodePath.parentPath.parentPath?.isProgram() ||
             nodePath.parentPath.parentPath?.isExportNamedDeclaration())

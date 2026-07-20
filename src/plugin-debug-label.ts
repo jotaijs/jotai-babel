@@ -16,7 +16,7 @@ export default function debugLabelPlugin(
         const { node } = nodePath;
         if (
           t.isCallExpression(node.declaration) &&
-          isAtom(t, node.declaration.callee, options?.customAtomNames)
+          isAtom(t, node.declaration.callee, options?.customAtomNames, nodePath)
         ) {
           const filename = (state.filename || 'unknown').replace(/\.\w+$/, '');
 
@@ -43,7 +43,7 @@ export default function debugLabelPlugin(
         if (
           t.isIdentifier(path.node.id) &&
           t.isCallExpression(path.node.init) &&
-          isAtom(t, path.node.init.callee, options?.customAtomNames)
+          isAtom(t, path.node.init.callee, options?.customAtomNames, path)
         ) {
           path.parentPath.insertAfter(
             t.expressionStatement(
