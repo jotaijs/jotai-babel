@@ -118,6 +118,31 @@ export default atom(0);`,
   `);
 });
 
+it('Should use a valid identifier for a default exported atom', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);`,
+      '/src/user-atoms.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const userAtoms = globalThis.jotaiAtomCache.get("/src/user-atoms.ts/userAtoms", atom(0));
+    userAtoms.debugLabel = "user-atoms";
+    export default userAtoms;"
+  `);
+});
+
 it('Should add a cache and debugLabel for mixed exports of atoms', () => {
   expect(
     transform(

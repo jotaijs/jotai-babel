@@ -6,6 +6,9 @@ import type { PluginOptions } from './utils.js';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const templateBuilder = (_templateBuilder as any).default || _templateBuilder;
 
+// Binding name -> debugLabel for atoms made from `export default atom()`
+const debugLabelsKey = 'jotaiDefaultExportDebugLabels';
+
 export default function debugLabelPlugin(
   { types: t }: typeof babel,
   options?: PluginOptions,
@@ -27,19 +30,34 @@ export default function debugLabelPlugin(
             displayName =
               filename.slice(0, -'/index'.length).split('/').pop() || 'unknown';
           }
+          // The file name may not be a valid or free binding name
+          // (`user-atoms.js`, `class.js`, `atom.js`, `console.js`).
+          const { scope } = nodePath;
+          let atomIdentifier = t.identifier(t.toIdentifier(displayName));
+          if (
+            scope.hasBinding(atomIdentifier.name) ||
+            scope.hasGlobal(atomIdentifier.name) ||
+            scope.hasReference(atomIdentifier.name)
+          ) {
+            atomIdentifier = scope.generateUidIdentifier(atomIdentifier.name);
+          }
+          state.set(debugLabelsKey, {
+            ...state.get(debugLabelsKey),
+            [atomIdentifier.name]: displayName,
+          });
           // Relies on visiting the variable declaration to add the debugLabel
           const buildExport = templateBuilder(`
           const %%atomIdentifier%% = %%atom%%;
           export default %%atomIdentifier%%
           `);
           const ast = buildExport({
-            atomIdentifier: t.identifier(displayName),
+            atomIdentifier,
             atom: node.declaration,
           });
           nodePath.replaceWithMultiple(ast as babel.Node[]);
         }
       },
-      VariableDeclarator(path) {
+      VariableDeclarator(path, state) {
         if (
           t.isIdentifier(path.node.id) &&
           t.isCallExpression(path.node.init) &&
@@ -53,7 +71,11 @@ export default function debugLabelPlugin(
                   t.identifier(path.node.id.name),
                   t.identifier('debugLabel'),
                 ),
-                t.stringLiteral(path.node.id.name),
+                t.stringLiteral(
+                  (path.scope.block.type === 'Program' &&
+                    state.get(debugLabelsKey)?.[path.node.id.name]) ||
+                    path.node.id.name,
+                ),
               ),
             ),
           );
