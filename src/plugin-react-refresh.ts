@@ -69,15 +69,16 @@ export default function reactRefreshPlugin(
           const filename = state.filename || 'unknown';
           const atomKey = `${filename}/${nodePath.node.id.name}`;
 
-          const buildAtomDeclaration = templateBuilder(
-            `const %%atomIdentifier%% = globalThis.jotaiAtomCache.get(%%atomKey%%, %%atom%%)`,
+          // Only wrap the initializer, so other declarators in the same
+          // statement and the declaration kind (let/var) are kept.
+          const buildAtomCacheGet = templateBuilder.expression(
+            `globalThis.jotaiAtomCache.get(%%atomKey%%, %%atom%%)`,
           );
-          const ast = buildAtomDeclaration({
-            atomIdentifier: t.identifier(nodePath.node.id.name),
+          const ast = buildAtomCacheGet({
             atomKey: t.stringLiteral(atomKey),
             atom: nodePath.node.init,
           });
-          nodePath.parentPath.replaceWith(ast as babel.Node);
+          nodePath.get('init').replaceWith(ast as babel.Node);
         }
       },
     },
