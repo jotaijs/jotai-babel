@@ -77,6 +77,78 @@ export default atom(0);`,
   `);
 });
 
+it('Should use a valid identifier for a default exported atom', () => {
+  const code = `import { atom } from 'jotai';
+export default atom(0);`;
+  expect(transform(code, 'src/user-atoms.ts')).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const userAtoms = atom(0);
+    userAtoms.debugLabel = "user-atoms";
+    export default userAtoms;"
+  `);
+  expect(transform(code, 'src/user-atoms/index.ts')).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const userAtoms = atom(0);
+    userAtoms.debugLabel = "user-atoms";
+    export default userAtoms;"
+  `);
+  expect(transform(code, 'src/2fa.ts')).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const fa = atom(0);
+    fa.debugLabel = "2fa";
+    export default fa;"
+  `);
+  expect(transform(code, 'src/class.ts')).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const _class = atom(0);
+    _class.debugLabel = "class";
+    export default _class;"
+  `);
+});
+
+it('Should not reuse an existing binding for a default exported atom', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);`,
+      'src/atom.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const _atom = atom(0);
+    _atom.debugLabel = "atom";
+    export default _atom;"
+  `);
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+const count = 1;
+export default atom(count);`,
+      'src/count.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const count = 1;
+    const _count = atom(count);
+    _count.debugLabel = "count";
+    export default _count;"
+  `);
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);
+console.log('loaded');`,
+      'src/console.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const _console = atom(0);
+    _console.debugLabel = "console";
+    export default _console;
+    console.log('loaded');"
+  `);
+});
+
 it('Should handle all types of exports', () => {
   expect(
     transform(
