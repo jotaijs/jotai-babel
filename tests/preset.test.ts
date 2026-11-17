@@ -112,7 +112,7 @@ export default atom(0);`,
       }
     };
     import { atom } from 'jotai';
-    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/atoms", atom(0));
+    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(0));
     atoms.debugLabel = "atoms";
     export default atoms;"
   `);
@@ -137,9 +137,36 @@ export default atom(0);`,
       }
     };
     import { atom } from 'jotai';
-    const userAtoms = globalThis.jotaiAtomCache.get("/src/user-atoms.ts/userAtoms", atom(0));
+    const userAtoms = globalThis.jotaiAtomCache.get("/src/user-atoms.ts/defaultExport", atom(0));
     userAtoms.debugLabel = "user-atoms";
     export default userAtoms;"
+  `);
+});
+
+it('Should keep the cache key of a default exported atom when its name is taken', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+const count = 1;
+export default atom(count);`,
+      '/src/count.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const count = 1;
+    const _count = globalThis.jotaiAtomCache.get("/src/count.ts/defaultExport", atom(count));
+    _count.debugLabel = "count";
+    export default _count;"
   `);
 });
 
@@ -166,7 +193,7 @@ it('Should add a cache and debugLabel for mixed exports of atoms', () => {
     import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     countAtom.debugLabel = "countAtom";
-    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/atoms", atom(get => get(countAtom) * 2));
+    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(get => get(countAtom) * 2));
     atoms.debugLabel = "atoms";
     export default atoms;"
   `);

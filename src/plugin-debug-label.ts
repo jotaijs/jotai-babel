@@ -1,6 +1,6 @@
 import type * as babel from '@babel/core';
 import _templateBuilder from '@babel/template';
-import { isAtom } from './utils.js';
+import { defaultExportBindings, isAtom } from './utils.js';
 import type { PluginOptions } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +49,7 @@ export default function debugLabelPlugin(
             state.set(debugLabelsKey, debugLabels);
           }
           debugLabels.set(atomIdentifier.name, displayName);
+          defaultExportBindings.set(state.file, atomIdentifier.name);
           // Relies on visiting the variable declaration to add the debugLabel
           const buildExport = templateBuilder(`
           const %%atomIdentifier%% = %%atom%%;
