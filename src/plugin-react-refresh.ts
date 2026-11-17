@@ -1,6 +1,6 @@
 import type * as babel from '@babel/core';
 import _templateBuilder from '@babel/template';
-import { isAtom } from './utils.js';
+import { defaultExportBindings, isAtom } from './utils.js';
 import type { PluginOptions } from './utils.js';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,7 +40,8 @@ export default function reactRefreshPlugin(
           isAtom(t, node.declaration.callee, options?.customAtomNames, nodePath)
         ) {
           const filename = state.filename || 'unknown';
-          const atomKey = `${filename}/defaultExport`;
+          // `default` is a reserved word, so no binding can have this key
+          const atomKey = `${filename}/default`;
 
           const buildExport = templateBuilder(
             `export default globalThis.jotaiAtomCache.get(%%atomKey%%, %%atom%%)`,
@@ -67,7 +68,14 @@ export default function reactRefreshPlugin(
             nodePath.parentPath.parentPath?.isExportNamedDeclaration())
         ) {
           const filename = state.filename || 'unknown';
-          const atomKey = `${filename}/${nodePath.node.id.name}`;
+          // The binding plugin-debug-label made for `export default atom()`
+          // gets the same key as an unchanged default export, so the key
+          // doesn't change when that binding has to be renamed.
+          const atomName =
+            nodePath.node.id.name === defaultExportBindings.get(state.file)
+              ? 'default'
+              : nodePath.node.id.name;
+          const atomKey = `${filename}/${atomName}`;
 
           // Only wrap the initializer, so other declarators in the same
           // statement and the declaration kind (let/var) are kept.

@@ -4,6 +4,11 @@ export interface PluginOptions {
   customAtomNames?: string[];
 }
 
+// File -> name of the binding that plugin-debug-label makes for
+// `export default atom()`, so plugin-react-refresh can give it the same
+// cache key as when it handles `export default atom()` itself.
+export const defaultExportBindings = new WeakMap<babel.BabelFile, string>();
+
 function isJotaiSource(source: string): boolean {
   return (
     source === 'jotai' ||
