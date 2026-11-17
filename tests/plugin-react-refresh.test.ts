@@ -354,3 +354,60 @@ const result = atom(someAtom);`,
     const result = atom(someAtom);"
   `);
 });
+
+it('Should keep every declarator and the declaration kind', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export const a = atom(0), b = atom(1);
+export let v = atom(0);
+var w = atom(2), x = 1;
+v = atom(3);`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    export const a = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/a", atom(0)),
+      b = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/b", atom(1));
+    export let v = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/v", atom(0));
+    var w = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/w", atom(2)),
+      x = 1;
+    v = atom(3);"
+  `);
+});
+
+it('Should keep a later declarator that is exported separately', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+const a = atom(0), b = atom(1);
+export { a, b };`,
+      '/src/atoms/index.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const a = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/a", atom(0)),
+      b = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/b", atom(1));
+    export { a, b };"
+  `);
+});
