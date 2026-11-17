@@ -41,10 +41,14 @@ export default function debugLabelPlugin(
           ) {
             atomIdentifier = scope.generateUidIdentifier(atomIdentifier.name);
           }
-          state.set(debugLabelsKey, {
-            ...state.get(debugLabelsKey),
-            [atomIdentifier.name]: displayName,
-          });
+          // A Map, so names like `constructor` don't read Object.prototype
+          let debugLabels: Map<string, string> | undefined =
+            state.get(debugLabelsKey);
+          if (!debugLabels) {
+            debugLabels = new Map();
+            state.set(debugLabelsKey, debugLabels);
+          }
+          debugLabels.set(atomIdentifier.name, displayName);
           // Relies on visiting the variable declaration to add the debugLabel
           const buildExport = templateBuilder(`
           const %%atomIdentifier%% = %%atom%%;
@@ -63,6 +67,8 @@ export default function debugLabelPlugin(
           t.isCallExpression(path.node.init) &&
           isAtom(t, path.node.init.callee, options?.customAtomNames, path)
         ) {
+          const debugLabels: Map<string, string> | undefined =
+            state.get(debugLabelsKey);
           path.parentPath.insertAfter(
             t.expressionStatement(
               t.assignmentExpression(
@@ -73,7 +79,7 @@ export default function debugLabelPlugin(
                 ),
                 t.stringLiteral(
                   (path.scope.block.type === 'Program' &&
-                    state.get(debugLabelsKey)?.[path.node.id.name]) ||
+                    debugLabels?.get(path.node.id.name)) ||
                     path.node.id.name,
                 ),
               ),

@@ -149,6 +149,27 @@ console.log('loaded');`,
   `);
 });
 
+it('Should not read inherited names as a default export label', () => {
+  expect(
+    transform(
+      `import { atom } from 'jotai';
+export default atom(0);
+export const constructor = atom(1);
+export const toString = atom(2);`,
+      'src/user-atoms.ts',
+    ),
+  ).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const userAtoms = atom(0);
+    userAtoms.debugLabel = "user-atoms";
+    export default userAtoms;
+    export const constructor = atom(1);
+    constructor.debugLabel = "constructor";
+    export const toString = atom(2);
+    toString.debugLabel = "toString";"
+  `);
+});
+
 it('Should handle all types of exports', () => {
   expect(
     transform(
