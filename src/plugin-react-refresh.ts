@@ -40,7 +40,8 @@ export default function reactRefreshPlugin(
           isAtom(t, node.declaration.callee, options?.customAtomNames, nodePath)
         ) {
           const filename = state.filename || 'unknown';
-          const atomKey = `${filename}/defaultExport`;
+          // `default` is a reserved word, so no binding can have this key
+          const atomKey = `${filename}/default`;
 
           const buildExport = templateBuilder(
             `export default globalThis.jotaiAtomCache.get(%%atomKey%%, %%atom%%)`,
@@ -72,7 +73,7 @@ export default function reactRefreshPlugin(
           // doesn't change when that binding has to be renamed.
           const atomName =
             nodePath.node.id.name === defaultExportBindings.get(state.file)
-              ? 'defaultExport'
+              ? 'default'
               : nodePath.node.id.name;
           const atomKey = `${filename}/${atomName}`;
 

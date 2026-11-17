@@ -112,7 +112,7 @@ export default atom(0);`,
       }
     };
     import { atom } from 'jotai';
-    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(0));
+    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/default", atom(0));
     atoms.debugLabel = "atoms";
     export default atoms;"
   `);
@@ -137,7 +137,7 @@ export default atom(0);`,
       }
     };
     import { atom } from 'jotai';
-    const userAtoms = globalThis.jotaiAtomCache.get("/src/user-atoms.ts/defaultExport", atom(0));
+    const userAtoms = globalThis.jotaiAtomCache.get("/src/user-atoms.ts/default", atom(0));
     userAtoms.debugLabel = "user-atoms";
     export default userAtoms;"
   `);
@@ -164,7 +164,7 @@ export default atom(count);`,
     };
     import { atom } from 'jotai';
     const count = 1;
-    const _count = globalThis.jotaiAtomCache.get("/src/count.ts/defaultExport", atom(count));
+    const _count = globalThis.jotaiAtomCache.get("/src/count.ts/default", atom(count));
     _count.debugLabel = "count";
     export default _count;"
   `);
@@ -193,7 +193,7 @@ it('Should add a cache and debugLabel for mixed exports of atoms', () => {
     import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
     countAtom.debugLabel = "countAtom";
-    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(get => get(countAtom) * 2));
+    const atoms = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/default", atom(get => get(countAtom) * 2));
     atoms.debugLabel = "atoms";
     export default atoms;"
   `);
@@ -224,4 +224,20 @@ it('Should handle custom atom names', () => {
     const mySpecialThing = globalThis.jotaiAtomCache.get("/src/atoms.ts/mySpecialThing", myCustomAtom(0));
     mySpecialThing.debugLabel = "mySpecialThing";"
   `);
+});
+
+it('Should not share a cache key between the default export and an atom named defaultExport', () => {
+  const code = transform(
+    `import { atom } from 'jotai';
+export const defaultExport = atom(1);
+export default atom(0);`,
+    '/src/atoms.ts',
+  );
+  const keys = [
+    ...(code ?? '').matchAll(/jotaiAtomCache\.get\("([^"]+)"/g),
+  ].map((m) => m[1]);
+  expect(keys).toEqual([
+    '/src/atoms.ts/defaultExport',
+    '/src/atoms.ts/default',
+  ]);
 });

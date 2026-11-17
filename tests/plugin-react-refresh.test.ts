@@ -109,7 +109,7 @@ export default atom(0);`,
       }
     };
     import { atom } from 'jotai';
-    export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(0));"
+    export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/default", atom(0));"
   `);
 });
 
@@ -135,7 +135,7 @@ it('Should add a cache for mixed exports of atoms', () => {
     };
     import { atom } from 'jotai';
     export const countAtom = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/countAtom", atom(0));
-    export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/defaultExport", atom(get => get(countAtom) * 2));"
+    export default globalThis.jotaiAtomCache.get("/src/atoms/index.ts/default", atom(get => get(countAtom) * 2));"
   `);
 });
 
@@ -410,4 +410,20 @@ export { a, b };`,
       b = globalThis.jotaiAtomCache.get("/src/atoms/index.ts/b", atom(1));
     export { a, b };"
   `);
+});
+
+it('Should not share a cache key between the default export and an atom named defaultExport', () => {
+  const code = transform(
+    `import { atom } from 'jotai';
+export const defaultExport = atom(1);
+export default atom(0);`,
+    '/src/atoms.ts',
+  );
+  const keys = [
+    ...(code ?? '').matchAll(/jotaiAtomCache\.get\("([^"]+)"/g),
+  ].map((m) => m[1]);
+  expect(keys).toEqual([
+    '/src/atoms.ts/defaultExport',
+    '/src/atoms.ts/default',
+  ]);
 });
