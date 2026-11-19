@@ -170,6 +170,43 @@ export default atom(count);`,
   `);
 });
 
+it('Should not shadow the globals the atom cache uses for a default exported atom', () => {
+  const code = `import { atom } from 'jotai';
+export default atom(0);`;
+  expect(transform(code, '/src/global-this.ts')).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const _globalThis = globalThis.jotaiAtomCache.get("/src/global-this.ts/default", atom(0));
+    _globalThis.debugLabel = "global-this";
+    export default _globalThis;"
+  `);
+  expect(transform(code, '/src/Map.ts')).toMatchInlineSnapshot(`
+    "globalThis.jotaiAtomCache = globalThis.jotaiAtomCache || {
+      cache: new Map(),
+      get(name, inst) {
+        if (this.cache.has(name)) {
+          return this.cache.get(name);
+        }
+        this.cache.set(name, inst);
+        return inst;
+      }
+    };
+    import { atom } from 'jotai';
+    const _Map = globalThis.jotaiAtomCache.get("/src/Map.ts/default", atom(0));
+    _Map.debugLabel = "Map";
+    export default _Map;"
+  `);
+});
+
 it('Should add a cache and debugLabel for mixed exports of atoms', () => {
   expect(
     transform(
