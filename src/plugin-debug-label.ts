@@ -9,6 +9,17 @@ const templateBuilder = (_templateBuilder as any).default || _templateBuilder;
 // Binding name -> debugLabel for atoms made from `export default atom()`
 const debugLabelsKey = 'jotaiDefaultExportDebugLabels';
 
+// The CommonJS module wrapper's parameters. Babel's CommonJS transform
+// renames user bindings with these names, but not the binding made here,
+// so `const module = atom(0)` would clash with the wrapper.
+const moduleWrapperNames = new Set([
+  'exports',
+  'require',
+  'module',
+  '__filename',
+  '__dirname',
+]);
+
 export default function debugLabelPlugin(
   { types: t }: typeof babel,
   options?: PluginOptions,
@@ -35,6 +46,7 @@ export default function debugLabelPlugin(
           const { scope } = nodePath;
           let atomIdentifier = t.identifier(t.toIdentifier(displayName));
           if (
+            moduleWrapperNames.has(atomIdentifier.name) ||
             scope.hasBinding(atomIdentifier.name) ||
             scope.hasGlobal(atomIdentifier.name) ||
             scope.hasReference(atomIdentifier.name)

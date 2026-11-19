@@ -1,4 +1,4 @@
-import { transformSync } from '@babel/core';
+import { parseSync, transformSync } from '@babel/core';
 import { expect, it } from 'vitest';
 import plugin from 'jotai-babel/plugin-debug-label';
 
@@ -147,6 +147,73 @@ console.log('loaded');`,
     export default _console;
     console.log('loaded');"
   `);
+});
+
+it('Should not bind eval or arguments for a default exported atom', () => {
+  const code = `import { atom } from 'jotai';
+export default atom(0);`;
+  const evalOutput = transform(code, 'src/eval.ts');
+  expect(evalOutput).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const _eval = atom(0);
+    _eval.debugLabel = "eval";
+    export default _eval;"
+  `);
+  const argumentsOutput = transform(code, 'src/arguments.ts');
+  expect(argumentsOutput).toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const _arguments = atom(0);
+    _arguments.debugLabel = "arguments";
+    export default _arguments;"
+  `);
+  // Modules are strict mode code, where eval and arguments can't be bound
+  for (const output of [evalOutput, argumentsOutput]) {
+    expect(() =>
+      parseSync(output!, {
+        babelrc: false,
+        configFile: false,
+        sourceType: 'module',
+      }),
+    ).not.toThrow();
+  }
+});
+
+it('Should not clash with the CommonJS module wrapper for a default exported atom', () => {
+  const wrapperNames = [
+    'exports',
+    'require',
+    'module',
+    '__filename',
+    '__dirname',
+  ];
+  for (const name of wrapperNames) {
+    const output = transformSync(
+      `import { atom } from 'jotai';
+export default atom(0);`,
+      {
+        babelrc: false,
+        configFile: false,
+        filename: `src/${name}.ts`,
+        plugins: [plugin],
+        presets: [
+          [
+            '@babel/preset-env',
+            { modules: 'commonjs', targets: { node: 'current' } },
+          ],
+        ],
+      },
+    )!.code!;
+    const module = { exports: {} as Record<string, unknown> };
+    const require = () => ({ atom: (init: unknown) => ({ init }) });
+    new Function(...wrapperNames, output)(
+      module.exports,
+      require,
+      module,
+      `src/${name}.ts`,
+      'src',
+    );
+    expect(module.exports.default).toEqual({ init: 0, debugLabel: name });
+  }
 });
 
 it('Should not read inherited names as a default export label', () => {
