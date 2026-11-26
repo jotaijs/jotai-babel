@@ -23,12 +23,14 @@ export default function debugLabelPlugin(
         ) {
           const filename = (state.filename || 'unknown').replace(/\.\w+$/, '');
 
-          let displayName = filename.split('/').pop()!;
+          // Windows paths use backslashes
+          let displayName = filename.split(/[\\/]/).pop()!;
 
           // ./{module name}/index.js
           if (displayName === 'index') {
             displayName =
-              filename.slice(0, -'/index'.length).split('/').pop() || 'unknown';
+              filename.slice(0, -'/index'.length).split(/[\\/]/).pop() ||
+              'unknown';
           }
           // The file name may not be a valid or free binding name
           // (`user-atoms.js`, `class.js`, `atom.js`, `console.js`).
