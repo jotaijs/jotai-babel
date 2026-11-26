@@ -77,6 +77,25 @@ export default atom(0);`,
   `);
 });
 
+it('Should handle a default exported atom with a Windows path', () => {
+  const code = `import { atom } from 'jotai';
+export default atom(0);`;
+  expect(transform(code, 'C:\\project\\src\\countAtom.ts'))
+    .toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const countAtom = atom(0);
+    countAtom.debugLabel = "countAtom";
+    export default countAtom;"
+  `);
+  expect(transform(code, 'C:\\project\\src\\atoms\\index.ts'))
+    .toMatchInlineSnapshot(`
+    "import { atom } from 'jotai';
+    const atoms = atom(0);
+    atoms.debugLabel = "atoms";
+    export default atoms;"
+  `);
+});
+
 it('Should use a valid identifier for a default exported atom', () => {
   const code = `import { atom } from 'jotai';
 export default atom(0);`;
